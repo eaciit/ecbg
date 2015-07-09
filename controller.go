@@ -65,6 +65,17 @@ func (ec *Controller) SetSession(key string, o interface{}) error {
 	return ec.sstr.Set(key, o)
 }
 
+func (ec *Controller) DeleteSession(key string, o interface{}) error {
+	if ec.sstr == nil {
+		errSession := ec.prepareSession()
+		if errSession != nil {
+			return errorlib.Error(packageName, modController, "DeleteSession", "Session Store could not be prepared = "+errSession.Error())
+		}
+	}
+
+	return ec.sstr.Delete(key)
+}
+
 func (ec *Controller) Json(data interface{}) {
 	ec.Data["json"] = data
 	ec.ServeJson()
