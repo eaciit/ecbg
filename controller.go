@@ -2,25 +2,52 @@ package ecbg
 
 import (
 	"github.com/astaxie/beego"
-	"github.com/astaxie/beego/context"
+	//"github.com/astaxie/beego/context"
+	"fmt"
 	"github.com/astaxie/beego/session"
+	"github.com/eaciit/database/base"
+	"github.com/eaciit/database/proxy"
 	"github.com/eaciit/errorlib"
+	"github.com/eaciit/orm"
 )
 
+/*
 type IController interface {
 	Context() *context.Context
 	SetSession(string, interface{})
 	GetSession(string) interface{}
 	ReleaseSession()
 }
+*/
 
 type Controller struct {
 	beego.Controller
 	sstr session.SessionStore
+	Orm  *orm.DataContext
+	Db   base.IConnection
 }
 
-func (ec *Controller) Context() *context.Context {
-	return ec.Ctx
+func (ec *Controller) Prepare() {
+	host := beego.AppConfig.String("db_server")
+	username := beego.AppConfig.String("db_username")
+	password := beego.AppConfig.String("db_password")
+	database := beego.AppConfig.String("db_name")
+	dbtype := beego.AppConfig.String("db_type")
+
+	if dbtype != "" {
+		db, e := proxy.NewConnection(dbtype, host, username, password, database)
+		if e != nil {
+			beego.Error(e.Error())
+		}
+		ec.Db = db
+	}
+
+	fmt.Println("Prepare")
+	if e := ec.Db.Connect(); e != nil {
+		beego.Error("Unable to connect to database")
+	}
+	fmt.Println("Connected")
+	ec.Orm = orm.New(ec.Db)
 }
 
 func (ec *Controller) prepareSession() error {
@@ -36,6 +63,14 @@ func (ec *Controller) Finish() {
 	if ec.sstr != nil {
 		w := ec.Ctx.ResponseWriter
 		ec.sstr.SessionRelease(w)
+	}
+
+	if ec.Orm != nil {
+		ec.Orm.Close()
+	}
+
+	if ec.Db != nil {
+		ec.Db.Close()
 	}
 }
 
