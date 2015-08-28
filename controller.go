@@ -3,12 +3,16 @@ package ecbg
 import (
 	"github.com/astaxie/beego"
 	//"github.com/astaxie/beego/context"
+	"errors"
 	"fmt"
 	"github.com/astaxie/beego/session"
 	"github.com/eaciit/database/base"
 	"github.com/eaciit/database/proxy"
 	"github.com/eaciit/errorlib"
 	"github.com/eaciit/orm"
+	"io"
+	"os"
+	"path/filepath"
 )
 
 /*
@@ -74,6 +78,51 @@ func (ec *Controller) Finish() {
 	}
 }
 
+//-- name is for later purpose
+func (p *Controller) SaveFiles(key string, folder string, filenamePattern string) error {
+	hs, eGet := p.GetFiles(key)
+	if eGet != nil {
+		return errors.New("Unable to get file: " + eGet.Error())
+	}
+	for _, h := range hs {
+		f, eOpen := h.Open()
+		if eOpen != nil {
+			return errors.New("Unable to open: " + eOpen.Error())
+		}
+		defer f.Close()
+
+		newFileName := filepath.Join(folder, h.Filename)
+		if eWrite := copyFile(f, newFileName); eWrite != nil {
+			return errors.New("Unable to write file " + h.Filename + " : " + eWrite.Error())
+		}
+	}
+	return nil
+}
+
+func (p *Controller) SaveFile(key string, folder string, filename string) error {
+	f, h, e := p.GetFile(key)
+	if e != nil {
+		return errors.New("Unable to open file: " + e.Error())
+	}
+	defer f.Close()
+	if filename == "" {
+		filename = h.Filename
+	}
+
+	filename = filepath.Join(folder, filename)
+	return copyFile(f, filename)
+}
+
+func copyFile(source io.Reader, tofile string) error {
+	fnew, errWrite := os.OpenFile(tofile, os.O_WRONLY|os.O_CREATE|os.O_TRUNC, 0666)
+	if errWrite != nil {
+		return errors.New("Unable to write file: " + errWrite.Error())
+	}
+	defer fnew.Close()
+	io.Copy(fnew, source)
+	return nil
+}
+
 func (ec *Controller) GetSession(key string, def interface{}) interface{} {
 	if ec.sstr == nil {
 		errSession := ec.prepareSession()
@@ -93,7 +142,8 @@ func (ec *Controller) SetSession(key string, o interface{}) error {
 	if ec.sstr == nil {
 		errSession := ec.prepareSession()
 		if errSession != nil {
-			return errorlib.Error(packageName, modController, "SetSession", "Session Store could not be prepared = "+errSession.Error())
+			return errorlib.Error(packageName, modController,
+				"SetSession", "Session Store could not be prepared = "+errSession.Error())
 		}
 	}
 
@@ -104,7 +154,8 @@ func (ec *Controller) DeleteSession(key string, o interface{}) error {
 	if ec.sstr == nil {
 		errSession := ec.prepareSession()
 		if errSession != nil {
-			return errorlib.Error(packageName, modController, "DeleteSession", "Session Store could not be prepared = "+errSession.Error())
+			return errorlib.Error(packageName, modController,
+				"DeleteSession", "Session Store could not be prepared = "+errSession.Error())
 		}
 	}
 
