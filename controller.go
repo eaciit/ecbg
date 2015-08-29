@@ -3,6 +3,7 @@ package ecbg
 import (
 	"github.com/astaxie/beego"
 	//"github.com/astaxie/beego/context"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"github.com/astaxie/beego/session"
@@ -160,6 +161,12 @@ func (ec *Controller) DeleteSession(key string, o interface{}) error {
 	}
 
 	return ec.sstr.Delete(key)
+}
+
+func (p *Controller) GetPayload(result interface{}) error {
+	body := p.Ctx.Request.Body
+	decoder := json.NewDecoder(body)
+	return decoder.Decode(result)
 }
 
 func (ec *Controller) Json(data interface{}) {
