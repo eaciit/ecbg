@@ -12,6 +12,7 @@ import (
 	"github.com/eaciit/errorlib"
 	"github.com/eaciit/orm"
 	"io"
+	"mime/multipart"
 	"os"
 	"path/filepath"
 )
@@ -167,6 +168,17 @@ func (p *Controller) GetPayload(result interface{}) error {
 	body := p.Ctx.Request.Body
 	decoder := json.NewDecoder(body)
 	return decoder.Decode(result)
+}
+
+func (p *Controller) GetPayloadMultipart(result interface{}) (map[string][]*multipart.FileHeader,
+	map[string][]string, error) {
+	var e error
+	e = p.Ctx.Request.ParseMultipartForm(1024 * 1024 * 1024 * 1024)
+	if e != nil {
+		return nil, nil, fmt.Errorf("Unable to parse: %s", e.Error())
+	}
+	m := p.Ctx.Request.MultipartForm
+	return m.File, m.Value, nil
 }
 
 func (ec *Controller) Json(data interface{}) {
