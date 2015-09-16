@@ -48,11 +48,11 @@ func (ec *Controller) Prepare() {
 		ec.Db = db
 	}
 
-	fmt.Println("Prepare")
+	//fmt.Println("Prepare")
 	if e := ec.Db.Connect(); e != nil {
 		beego.Error("Unable to connect to database")
 	}
-	fmt.Println("Connected")
+	//fmt.Println("Connected")
 	ec.Orm = orm.New(ec.Db)
 }
 
