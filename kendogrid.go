@@ -57,8 +57,8 @@ func (a *Controller) KendoGridSettings(ins toolkit.M) toolkit.M {
 		}
 	}
 
-	if fqe := a.KendoGridFilter("where"); fqe != nil {
-		if ins.Has("filter") {
+	if fqe := a.KendoGridFilter("filter"); fqe != nil {
+		if ins.Has("where") {
 			fqe = dbs.And(fqe, ins.Get("where").(*dbs.QE))
 		}
 		s.Set("where", fqe)
@@ -123,6 +123,7 @@ func (a *Controller) KendoGridFilter(parent string) *dbs.QE {
 func (c *Controller) KendoGridData(obj orm.IModel, objs interface{}, ins toolkit.M) *toolkit.Result {
 	result := toolkit.NewResult()
 	s := c.KendoGridSettings(ins)
+	fmt.Printf("Settings: %s \n", toolkit.JsonString(s))
 	cursor := c.Orm.Find(obj, s)
 	e = cursor.FetchAll(objs, true)
 
