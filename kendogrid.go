@@ -22,7 +22,10 @@ filter[filters][0][value]
 */
 var e error
 
-func (a *Controller) KendoGridSettings() toolkit.M {
+func (a *Controller) KendoGridSettings(ins toolkit.M) toolkit.M {
+	if ins == nil {
+		ins = toolkit.M{}
+	}
 	s := toolkit.M{}
 	q_skip := a.Ctx.Input.Query("skip")
 	q_page := a.Ctx.Input.Query("page")
@@ -54,7 +57,10 @@ func (a *Controller) KendoGridSettings() toolkit.M {
 		}
 	}
 
-	if fqe := a.KendoGridFilter("filter"); fqe != nil {
+	if fqe := a.KendoGridFilter("where"); fqe != nil {
+		if ins.Has("filter") {
+			fqe = dbs.And(fqe, ins.Get("where").(*dbs.QE))
+		}
 		s.Set("where", fqe)
 	}
 
@@ -114,9 +120,9 @@ func (a *Controller) KendoGridFilter(parent string) *dbs.QE {
 	return nil
 }
 
-func (c *Controller) KendoGridData(obj orm.IModel, objs interface{}) *toolkit.Result {
+func (c *Controller) KendoGridData(obj orm.IModel, objs interface{}, ins toolkit.M) *toolkit.Result {
 	result := toolkit.NewResult()
-	s := c.KendoGridSettings()
+	s := c.KendoGridSettings(ins)
 	cursor := c.Orm.Find(obj, s)
 	e = cursor.FetchAll(objs, true)
 
