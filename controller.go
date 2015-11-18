@@ -31,6 +31,9 @@ type Controller struct {
 	sstr session.SessionStore
 	Orm  *orm.DataContext
 	Db   base.IConnection
+
+	RequireLogin    bool
+	RequireAccessId string
 }
 
 func (ec *Controller) Prepare() {
@@ -49,11 +52,14 @@ func (ec *Controller) Prepare() {
 	}
 
 	//fmt.Println("Prepare")
-	if e := ec.Db.Connect(); e != nil {
-		beego.Error("Unable to connect to database")
+	if ec.Db != nil {
+		if e := ec.Db.Connect(); e != nil {
+			beego.Error("Unable to connect to database")
+		}
+		//fmt.Println("Connected")
+		ec.Orm = orm.New(ec.Db)
 	}
-	//fmt.Println("Connected")
-	ec.Orm = orm.New(ec.Db)
+	ec.prepareSession()
 }
 
 func (ec *Controller) prepareSession() error {
